@@ -7,7 +7,7 @@ A modern, interactive dashboard for monitoring patient risk factors and interven
 - Real-time risk assessment and scoring
 - Interactive patient profiles with detailed metrics
 - Automated intervention recommendations
-- Data visualization with Plotly and Altair
+- Data visualisation with Plotly and Altair
 - Responsive design with dark theme
 - Efficient data caching for performance
 
@@ -41,12 +41,18 @@ streamlit run dashboard.py
 
 ## Data Format
 
-The dashboard expects patient data in a specific format. Ensure your data includes:
-- Patient demographics (ID, name, age, etc.)
-- Medical conditions
-- Visit history
-- Risk factors
-- Intervention history
+The dashboard expects Med Hack - Advanced Tract 1, patient data in a specific format. Ensure your data includes:
+/CSV/
+- conditions.csv
+- devices.csv
+- encounters.csv
+- imaging.csv
+- immunizations.csv
+- medications.csv
+- observations.csv
+- patients.csv
+- procedures.csv
+- allergies.csv
 
 ## Contributing
 
