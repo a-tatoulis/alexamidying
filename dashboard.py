@@ -550,191 +550,189 @@ def main():
                 birth_date = pd.to_datetime(patient_data['BIRTHDATE'])
                 age = (pd.Timestamp.now() - birth_date).days // 365
                 
-                # Create patient card with header
-                risk_level = "high-risk" if patient.get('priority_score', 0) > 0.7 else "medium-risk" if patient.get('priority_score', 0) > 0.4 else "low-risk"
-                risk_text = "High Risk" if patient.get('priority_score', 0) > 0.7 else "Medium Risk" if patient.get('priority_score', 0) > 0.4 else "Low Risk"
-                
-                st.markdown(f"""
-                    <div class="patient-card">
-                        <div class="patient-header">
-                            <span class="patient-name">🏥 {patient_data['first_name']} {patient_data['last_name']}</span>
-                            <span class="risk-badge {risk_level}">{risk_text}</span>
-                        </div>
-                
-                """, unsafe_allow_html=True)
-                
-                # Create expandable section for details
-                with st.expander("View Patient Details", expanded=False):
-                    # Demographics row
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Age", age)
-                    with col2:
-                        st.metric("Gender", patient_data['GENDER'])
-                    with col3:
-                        st.metric("Race", patient_data['RACE'])
-                    with col4:
-                        st.metric("Location", f"{patient_data['CITY']}, {patient_data['STATE']}")
+                # Create patient card using Streamlit container
+                with st.container():
+                    # Header section with name and risk level
+                    header_cols = st.columns([4, 1])
+                    with header_cols[0]:
+                        st.subheader(f"🏥 {patient_data['first_name']} {patient_data['last_name']}")
+                    with header_cols[1]:
+                        if patient.get('priority_score', 0) > 0.7:
+                            st.error("High Risk")
+                        elif patient.get('priority_score', 0) > 0.4:
+                            st.warning("Medium Risk")
+                        else:
+                            st.success("Low Risk")
                     
-                    # Main content in 4 columns
-                    st.markdown("---")  # Separator
-                    main_col1, main_col2, main_col3, main_col4 = st.columns(4)
-                    
-                    with main_col1:
-                        st.markdown("##### Risk Factors")
-                        for factor in patient.get('risk_factors', []):
-                            severity = factor['severity']
-                            # Get human readable description
-                            description = ""
-                            if factor['factor'] == 'Housing Concerns':
-                                description = "Consistent unstable housing situation"
-                            elif factor['factor'] == 'Employment Instability':
-                                description = f"{factor['value']} job changes in the past year"
-                            elif factor['factor'] == 'Extended Gap in Care':
-                                description = f"{int(factor['value'])} days since last visit"
-                            elif factor['factor'] == 'High Stress Levels':
-                                description = f"Stress level {factor['value']:.1f} out of 5"
-                            elif factor['factor'] == 'Low Social Contact':
-                                description = f"Only {factor['value']:.1f} social interactions per week"
-                            else:
-                                description = f"Value: {factor['value']:.1f}"
+                    # Patient details in an expander
+                    with st.expander("View Patient Details", expanded=False):
+                        # Demographics section
+                        st.markdown("#### Demographics")
+                        demo_cols = st.columns(4)
+                        with demo_cols[0]:
+                            st.metric("Age", age)
+                        with demo_cols[1]:
+                            st.metric("Gender", patient_data['GENDER'])
+                        with demo_cols[2]:
+                            st.metric("Race", patient_data['RACE'])
+                        with demo_cols[3]:
+                            st.metric("Location", f"{patient_data['CITY']}, {patient_data['STATE']}")
+                        
+                        st.divider()
+                        
+                        # Main content section
+                        main_cols = st.columns(4)
+                        
+                        # Risk Factors column
+                        with main_cols[0]:
+                            st.markdown("##### Risk Factors")
+                            for factor in patient.get('risk_factors', []):
+                                severity = factor['severity']
+                                # Get human readable description
+                                description = ""
+                                if factor['factor'] == 'Housing Concerns':
+                                    description = "Consistent unstable housing situation"
+                                elif factor['factor'] == 'Employment Instability':
+                                    description = f"{factor['value']} job changes in the past year"
+                                elif factor['factor'] == 'Extended Gap in Care':
+                                    description = f"{int(factor['value'])} days since last visit"
+                                elif factor['factor'] == 'High Stress Levels':
+                                    description = f"Stress level {factor['value']:.1f} out of 5"
+                                elif factor['factor'] == 'Low Social Contact':
+                                    description = f"Only {factor['value']:.1f} social interactions per week"
+                                else:
+                                    description = f"Value: {factor['value']:.1f}"
 
-                            if severity == 'high':
-                                st.error(f"⚠️ High Risk: {factor['factor']}\n{description}")
-                            elif severity == 'medium':
-                                st.warning(f"⚡ Medium Risk: {factor['factor']}\n{description}")
+                                if severity == 'high':
+                                    st.error(f"⚠️ {factor['factor']}\n{description}")
+                                elif severity == 'medium':
+                                    st.warning(f"⚡ {factor['factor']}\n{description}")
+                                else:
+                                    st.info(f"ℹ️ {factor['factor']}\n{description}")
+                        
+                        # Weight Management column
+                        with main_cols[1]:
+                            st.markdown("##### Weight Management")
+                            weight_data = patient['weight_data']
+                            weight_metrics = weight_data['weight_metrics']
+                            med_metrics = weight_data['medication_metrics']
+                            
+                            if med_metrics['active_prescription']:
+                                st.success("✅ Active GLP-1 Medication")
+                                st.metric(
+                                    "Days on Medication",
+                                    med_metrics['days_on_medication']
+                                )
                             else:
-                                st.info(f"ℹ️ Low Risk: {factor['factor']}\n{description}")
-                    
-                    with main_col2:
-                        st.markdown("##### Weight Management")
-                        weight_data = patient['weight_data']
-                        weight_metrics = weight_data['weight_metrics']
-                        med_metrics = weight_data['medication_metrics']
-                        
-                        # Medication status first
-                        if med_metrics['active_prescription']:
-                            st.success("✅ Active GLP-1 Medication")
+                                st.warning("⚠️ No Active GLP-1 Medication")
+                            
                             st.metric(
-                                "Days on Medication",
-                                med_metrics['days_on_medication']
+                                "Total Weight Change",
+                                f"{weight_metrics['total_change']:.1f} lbs",
+                                f"{weight_metrics['pct_change']:.1f}%",
+                                delta_color="inverse"
                             )
-                        else:
-                            st.warning("⚠️ No Active GLP-1 Medication")
                         
-                        # Weight change metrics
-                        st.metric(
-                            "Total Weight Change",
-                            f"{weight_metrics['total_change']:.1f} lbs",
-                            f"{weight_metrics['pct_change']:.1f}%",
-                            delta_color="inverse"
-                        )
-                    
-                    with main_col3:
-                        st.markdown("##### Medical Conditions")
-                        if patient_data['current_conditions']:
-                            conditions = patient_data['current_conditions'].split('; ')
-                            disorders = [c.replace('(disorder)', '').strip() for c in conditions if '(disorder)' in c.lower()]
-                            
-                            if disorders:
-                                visible_disorders = disorders[:3]
-                                hidden_disorders = disorders[3:]
+                        # Medical Conditions column
+                        with main_cols[2]:
+                            st.markdown("##### Medical Conditions")
+                            if patient_data['current_conditions']:
+                                conditions = patient_data['current_conditions'].split('; ')
+                                disorders = [c.replace('(disorder)', '').strip() for c in conditions if '(disorder)' in c.lower()]
                                 
-                                disorders_html = ""
-                                for disorder in visible_disorders:
-                                    disorders_html += f'<div class="medical-item">🏥 {disorder}</div>'
+                                if disorders:
+                                    visible_disorders = disorders[:3]
+                                    hidden_disorders = disorders[3:]
+                                    
+                                    # Display visible disorders
+                                    for disorder in visible_disorders:
+                                        with st.container():
+                                            st.markdown(f"🏥 {disorder}")
+                                    
+                                    # Show hidden disorders with a toggle
+                                    if hidden_disorders:
+                                        show_more = st.button(
+                                            f"+ {len(hidden_disorders)} more disorders",
+                                            key=f"disorders_{i}"
+                                        )
+                                        if show_more:
+                                            for disorder in hidden_disorders:
+                                                st.markdown(f"🏥 {disorder}")
+                            else:
+                                st.info("No conditions recorded")
+                        
+                        # Clinical Findings column
+                        with main_cols[3]:
+                            st.markdown("##### Clinical Findings")
+                            if patient_data['current_conditions']:
+                                conditions = patient_data['current_conditions'].split('; ')
+                                findings = [c.replace('(finding)', '').strip() for c in conditions if '(finding)' in c.lower()]
                                 
-                                if hidden_disorders:
-                                    disorders_html += f'''
-                                        <div class="medical-item">
-                                            + {len(hidden_disorders)} more disorders...
-                                            <div class="additional-conditions">
-                                                {''.join([f'🏥 {d}<br>' for d in hidden_disorders])}
-                                            </div>
-                                        </div>
-                                    '''
-                                
-                                st.markdown(disorders_html, unsafe_allow_html=True)
-                        else:
-                            st.info("No conditions recorded")
+                                if findings:
+                                    visible_findings = findings[:3]
+                                    hidden_findings = findings[3:]
+                                    
+                                    # Display visible findings
+                                    for finding in visible_findings:
+                                        with st.container():
+                                            st.markdown(f"📋 {finding}")
+                                    
+                                    # Show hidden findings with a toggle
+                                    if hidden_findings:
+                                        show_more = st.button(
+                                            f"+ {len(hidden_findings)} more findings",
+                                            key=f"findings_{i}"
+                                        )
+                                        if show_more:
+                                            for finding in hidden_findings:
+                                                st.markdown(f"📋 {finding}")
+                            else:
+                                st.info("No findings recorded")
+                        
+                        st.divider()
+                        
+                        # Recommendations section
+                        st.markdown("##### Recommended Actions")
+                        rec_cols = st.columns(2)
+                        
+                        def get_action_emoji(action):
+                            if 'appointment' in action.lower():
+                                return '📅'
+                            elif 'medication' in action.lower():
+                                return '💊'
+                            elif 'weight' in action.lower():
+                                return '⚖️'
+                            elif 'exercise' in action.lower():
+                                return '🏃'
+                            elif 'diet' in action.lower():
+                                return '🥗'
+                            else:
+                                return '📝'
+                        
+                        with rec_cols[0]:
+                            st.markdown("**Clinical Recommendations:**")
+                            for rec in patient.get('recommendations', []):
+                                emoji = get_action_emoji(rec)
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.warning(f"{emoji} {rec}")
+                                with col2:
+                                    if st.button("Book Now →", key=f"clinical_{i}_{rec[:10]}"):
+                                        st.success("✅ Booked!")
+                        
+                        with rec_cols[1]:
+                            st.markdown("**Weight Management Recommendations:**")
+                            for rec in weight_data.get('recommendations', []):
+                                emoji = get_action_emoji(rec)
+                                col1, col2 = st.columns([4, 1])
+                                with col1:
+                                    st.warning(f"{emoji} {rec}")
+                                with col2:
+                                    if st.button("Book Now →", key=f"weight_{i}_{rec[:10]}"):
+                                        st.success("✅ Booked!")
                     
-                    with main_col4:
-                        st.markdown("##### Clinical Findings")
-                        if patient_data['current_conditions']:
-                            conditions = patient_data['current_conditions'].split('; ')
-                            findings = [c.replace('(finding)', '').strip() for c in conditions if '(finding)' in c.lower()]
-                            
-                            if findings:
-                                visible_findings = findings[:3]
-                                hidden_findings = findings[3:]
-                                
-                                findings_html = ""
-                                for finding in visible_findings:
-                                    findings_html += f'<div class="medical-item">📋 {finding}</div>'
-                                
-                                if hidden_findings:
-                                    findings_html += f'''
-                                        <div class="medical-item">
-                                            + {len(hidden_findings)} more findings...
-                                            <div class="additional-conditions">
-                                                {''.join([f'📋 {f}<br>' for f in hidden_findings])}
-                                            </div>
-                                        </div>
-                                    '''
-                                
-                                st.markdown(findings_html, unsafe_allow_html=True)
-                        else:
-                            st.info("No findings recorded")
-                    
-                    # Recommendations section
-                    st.markdown("---")  # Separator
-                    st.markdown("##### Recommended Actions")
-                    rec_col1, rec_col2 = st.columns(2)
-                    
-                    def get_action_emoji(action):
-                        if 'appointment' in action.lower():
-                            return '📅'
-                        elif 'medication' in action.lower():
-                            return '💊'
-                        elif 'weight' in action.lower():
-                            return '⚖️'
-                        elif 'exercise' in action.lower():
-                            return '🏃'
-                        elif 'diet' in action.lower():
-                            return '🥗'
-                        else:
-                            return '📝'
-                    
-                    with rec_col1:
-                        st.markdown("**Clinical Recommendations:**")
-                        for rec in patient.get('recommendations', []):
-                            emoji = get_action_emoji(rec)
-                            action_html = f'''
-                                <div class="action-button" onclick="this.classList.toggle('completed')">
-                                    <span>{emoji} {rec}</span>
-                                    <span class="cta">Book Now</span>
-                                    <span class="arrow">→</span>
-                                </div>
-                            '''
-                            st.markdown(action_html, unsafe_allow_html=True)
-                    
-                    with rec_col2:
-                        st.markdown("**Weight Management Recommendations:**")
-                        for rec in weight_data.get('recommendations', []):
-                            emoji = get_action_emoji(rec)
-                            action_html = f'''
-                                <div class="action-button" onclick="this.classList.toggle('completed')">
-                                    <span>{emoji} {rec}</span>
-                                    <span class="cta">Book Now</span>
-                                    <span class="arrow">→</span>
-                                </div>
-                            '''
-                            st.markdown(action_html, unsafe_allow_html=True)
-                
-                st.markdown("</div>", unsafe_allow_html=True)  # Close patient card
-                
-                # Add spacing between cards
-                st.markdown("<br>", unsafe_allow_html=True)
+                    # Add spacing between cards
+                    st.divider()
                 
             except Exception as e:
                 st.error(f"Error displaying patient: {str(e)}")
