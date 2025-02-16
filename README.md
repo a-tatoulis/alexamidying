@@ -41,8 +41,9 @@ streamlit run dashboard.py
 
 ## Data Format
 
-The dashboard expects Med Hack - Advanced Tract 1, patient data in a specific format. Ensure your data includes:
-/CSV/
+The dashboard expects Med Hack - Advanced Tract 1, patient data in a specific format. Ensure your repo includes:
+
+patient-risk-dashboard/CSV/
 - conditions.csv
 - devices.csv
 - encounters.csv
