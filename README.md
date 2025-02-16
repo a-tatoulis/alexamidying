@@ -15,7 +15,7 @@ A modern, interactive dashboard for monitoring patient risk factors and interven
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/a-tatoulis/alexamidying
 cd patient-risk-dashboard
 ```
 
